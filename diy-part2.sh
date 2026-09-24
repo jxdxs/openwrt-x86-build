@@ -1,20 +1,40 @@
 #!/bin/bash
 #
-# https://github.com/P3TERX/Actions-OpenWrt
-# File name: diy-part2.sh
-# Description: OpenWrt DIY script part 2 (After Update feeds)
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
+# DIY script - part 2 (runs inside openwrt/ source dir)
 
-# Modify default IP
-#sed -i 's/192.168.1.1/192.168.50.5/g' package/base-files/files/bin/config_generate
+# 1. 默认 root 密码设为 password
+[ -f package/base-files/files/etc/shadow ] && sed -i 's#root::0:0:99999:7:::#root:$1$wEehtjxj$YBu4quNfVUxvTRkVw7Ql/:0:0:99999:7:::#' package/base-files/files/etc/shadow
 
-# Modify default theme
-#sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+# 2. 首次开机默认设置：中文 + Argon 主题
+mkdir -p files/etc/uci-defaults
+cat > files/etc/uci-defaults/zzz-default-settings <<'UCI_EOF'
+#!/bin/sh
+uci set luci.main.lang='zh_cn'
+uci set luci.main.mediaurlbase='/luci-static/argon'
+uci commit luci
+exit 0
+UCI_EOF
+chmod +x files/etc/uci-defaults/zzz-default-settings
 
-# Modify hostname
-#sed -i 's/OpenWrt/P3TERX-Router/g' package/base-files/files/bin/config_generate
+# 3. 预置 OpenClash Meta（mihomo）内核
+mkdir -p files/etc/openclash/core
+MIHOMO_URL="$(curl -sL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep '"browser_download_url":' | grep 'linux-amd64' | grep '\.gz"' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')"
+if [ -n "$MIHOMO_URL" ]; then
+  if curl -sL "$MIHOMO_URL" -o /tmp/mihomo.gz; then
+    if gunzip -c /tmp/mihomo.gz > files/etc/openclash/core/clash_meta 2>/dev/null; then
+      chmod +x files/etc/openclash/core/clash_meta
+      if ! ./files/etc/openclash/core/clash_meta -v >/dev/null 2>&1; then
+        echo "mihomo core test failed, removing"
+        rm -f files/etc/openclash/core/clash_meta
+      fi
+    fi
+    rm -f /tmp/mihomo.gz
+  fi
+fi
+
+# 4. 预置 OpenClash Geo 数据库
+mkdir -p files/etc/openclash
+curl -sL --max-time 120 https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb -o files/etc/openclash/Country.mmdb
+curl -sL --max-time 120 https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -o files/etc/openclash/GeoIP.dat
+curl -sL --max-time 120 https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -o files/etc/openclash/GeoSite.dat
+find files/etc/openclash -size 0 -delete
