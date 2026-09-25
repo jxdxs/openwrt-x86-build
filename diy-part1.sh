@@ -11,3 +11,5 @@
 # Add a feed source (skip if already present; upstream lede already ships helloworld)
 grep -q "src-git helloworld" feeds.conf.default || echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
+# Add OpenClash feed (official repo; helloworld feed no longer ships luci-app-openclash)
+grep -q "src-git openclash" feeds.conf.default || echo 'src-git openclash https://github.com/vernesong/OpenClash' >>feeds.conf.default
