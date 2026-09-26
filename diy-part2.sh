@@ -4,7 +4,7 @@
 
 
 # 1. 默认 root 密码设为 password
-[ -f package/base-files/files/etc/shadow ] && sed -i 's#^root:[^:]*:.*#root:$1$wEehtjxj$YBu4quNfVUxvTRkVw7Ql/:0:0:99999:7:::#' package/base-files/files/etc/shadow
+[ -f package/base-files/files/etc/shadow ] && sed -i 's#^root:[^:]*:.*#root:$1$wEehtjxj$nU9MsXtbQM556FRfPNLIB.:0:0:99999:7:::#' package/base-files/files/etc/shadow
 
 
 # 2. 首次开机默认设置：中文 + Argon 主题
